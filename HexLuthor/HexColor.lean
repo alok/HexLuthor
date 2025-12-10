@@ -3,11 +3,14 @@
 -/
 import ProofWidgets.Component.HtmlDisplay
 import ProofWidgets.Presentation.Expr
+import Std.Internal.Parsec
 
 open Lean Parser Server Widget Elab Term Meta
 open scoped ProofWidgets.Jsx
 
 namespace HexLuthor
+
+open Std.Internal.Parsec String
 
 /-- A hex color with red, green, blue components (0-255) -/
 structure Hex where
@@ -35,27 +38,33 @@ def toHexString (c : Hex) : String :=
     s!"{hiChar}{loChar}"
   s!"#{toHex2 c.r}{toHex2 c.g}{toHex2 c.b}"
 
-/-- Parse a single hex digit character to a number 0-15 -/
-def hexDigitToNat (c : Char) : Option Nat :=
-  if '0' ≤ c && c ≤ '9' then some (c.toNat - '0'.toNat)
-  else if 'a' ≤ c && c ≤ 'f' then some (c.toNat - 'a'.toNat + 10)
-  else if 'A' ≤ c && c ≤ 'F' then some (c.toNat - 'A'.toNat + 10)
-  else none
+/-! ### Parsec-based hex parsing -/
+
+/-- Convert a hex digit char to its numeric value (0-15) -/
+def hexCharToNat (c : Char) : Nat :=
+  if '0' ≤ c && c ≤ '9' then c.toNat - '0'.toNat
+  else if 'a' ≤ c && c ≤ 'f' then c.toNat - 'a'.toNat + 10
+  else c.toNat - 'A'.toNat + 10  -- 'A'..'F'
+
+/-- Parse two hex digits as a UInt8 (e.g., "FF" → 255) -/
+def hexPair : Std.Internal.Parsec.String.Parser UInt8 := do
+  let hi ← hexDigit
+  let lo ← hexDigit
+  return (hexCharToNat hi * 16 + hexCharToNat lo).toUInt8
+
+/-- Parse a 6-digit hex color string "RRGGBB" into a Hex -/
+def hexColorParser : Std.Internal.Parsec.String.Parser Hex := do
+  let r ← hexPair
+  let g ← hexPair
+  let b ← hexPair
+  eof
+  return ⟨r, g, b⟩
 
 /-- Parse a hex string like "RRGGBB" (without #) to a Hex color -/
-def fromHexString? (s : String) : Option Hex := do
-  guard (s.length == 6)
-  let chars := s.toList
-  let d0 ← hexDigitToNat chars[0]!
-  let d1 ← hexDigitToNat chars[1]!
-  let d2 ← hexDigitToNat chars[2]!
-  let d3 ← hexDigitToNat chars[3]!
-  let d4 ← hexDigitToNat chars[4]!
-  let d5 ← hexDigitToNat chars[5]!
-  let r := (d0 * 16 + d1).toUInt8
-  let g := (d2 * 16 + d3).toUInt8
-  let b := (d4 * 16 + d5).toUInt8
-  return ⟨r, g, b⟩
+def fromHexString? (s : String) : Option Hex :=
+  match hexColorParser.run s with
+  | .ok hex => some hex
+  | .error _ => none
 
 end Hex
 
