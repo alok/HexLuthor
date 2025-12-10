@@ -167,17 +167,13 @@ def hexPresenter : ProofWidgets.ExprPresenter where
     match ← extractHexFromExpr? e with
     | some color =>
       let cssColor := color.toHexString
-      return .element "span" #[
-        ("style", Json.str "display: inline-flex; align-items: center; gap: 6px;")
-      ] #[
-        .element "span" #[
-          ("style", Json.str s!"display: inline-block; width: 16px; height: 16px; background-color: {cssColor}; border: 1px solid #666; border-radius: 3px;")
-        ] #[],
-        .element "code" #[] #[.text cssColor],
-        .element "span" #[("style", Json.str "opacity: 0.6;")] #[
-          .text s!" ({← Meta.ppExpr e})"
-        ]
-      ]
+      let pp ← Meta.ppExpr e
+      -- Simple colored square + text
+      return <span style="display: inline-flex; align-items: center; gap: 4px;">
+        <span style={s!"background: {cssColor}; width: 12px; height: 12px; border: 1px solid gray; border-radius: 2px; display: inline-block;"}></span>
+        <code>{.text cssColor}</code>
+        <span style="opacity: 0.5;">{.text s!" ({pp})"}</span>
+      </span>
     | none =>
       -- Can't evaluate statically, just show the expression
       return .text s!"{← Meta.ppExpr e}"
