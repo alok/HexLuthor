@@ -1,0 +1,15 @@
+name = "HexLuthor"
+version = "0.1.0"
+defaultTargets = ["hexluthor"]
+
+[[require]]
+name = "proofwidgets"
+git = "https://github.com/leanprover-community/ProofWidgets4"
+rev = "main"
+
+[[lean_lib]]
+name = "HexLuthor"
+
+[[lean_exe]]
+name = "hexluthor"
+root = "Main"

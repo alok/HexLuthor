@@ -1,0 +1,40 @@
+{
+  "name": "hexluthor-colors",
+  "displayName": "HexLuthor Color Preview",
+  "description": "Inline color preview for Lean 4 #h\"RRGGBB\" hex color syntax",
+  "version": "0.2.0",
+  "publisher": "hexluthor",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/alokbeniwal/HexLuthor"
+  },
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Visualization"
+  ],
+  "activationEvents": [
+    "onLanguage:lean4"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "lean4",
+        "extensions": [".lean"]
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.80.0",
+    "typescript": "^5.0.0"
+  }
+}

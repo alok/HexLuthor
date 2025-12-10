@@ -1,0 +1,4 @@
+/.lake
+node_modules/
+*.vsix
+vscode-hexluthor/out/
