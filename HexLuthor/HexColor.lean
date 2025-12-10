@@ -66,16 +66,10 @@ syntax:max (name := hexColorLit) "#h" noWs str : term
 
 /-- Create HTML for a hex color preview -/
 def hexColorHtml (cssColor : String) : ProofWidgets.Html :=
-  .element "span" #[
-    ("style", Json.str s!"display: inline-flex; align-items: center; gap: 4px;")
-  ] #[
-    .element "span" #[
-      ("style", Json.str s!"display: inline-block; width: 12px; height: 12px; background-color: {cssColor}; border: 1px solid #666; border-radius: 2px; vertical-align: middle;")
-    ] #[],
-    .element "code" #[
-      ("style", Json.str "font-size: 0.9em;")
-    ] #[.text cssColor]
-  ]
+  <span style="display: inline-flex; align-items: center; gap: 8px; padding: 4px;">
+    <span style={s!"display: inline-block; width: 20px; height: 20px; background-color: {cssColor}; border: 1px solid #666; border-radius: 3px;"}></span>
+    <code style="font-size: 1em;">{.text cssColor}</code>
+  </span>
 
 /-- Get a unicode color square approximation for a hex color -/
 def colorSquare (c : Hex) : String :=
