@@ -36,7 +36,8 @@ def ocean : Hex := #h"000000"  -- Sea blue
 
 -- Example showing colors in proof goals (click on the goal to see colors)
 example : myFavoriteColor = #h"4169E1" := by
-  with_panel_widgets [ProofWidgets.SelectionPanel]
-    -- Place cursor here and look at the goal - colors show in the infoview!
-    rfl
-#eval 0b0101
+  -- Place cursor here and look at the goal - the @[expr_presenter] shows colors
+  rfl
+
+-- Debug test
+#check (rfl : myFavoriteColor = myFavoriteColor)
