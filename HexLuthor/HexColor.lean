@@ -66,9 +66,9 @@ syntax:max (name := hexColorLit) "#h" noWs str : term
 
 /-- Create HTML for a hex color preview -/
 def hexColorHtml (cssColor : String) : ProofWidgets.Html :=
-  <span style="display: inline-flex; align-items: center; gap: 8px; padding: 4px;">
-    <span style={s!"display: inline-block; width: 20px; height: 20px; background-color: {cssColor}; border: 1px solid #666; border-radius: 3px;"}></span>
-    <code style="font-size: 1em;">{.text cssColor}</code>
+  <span style={json% {display: "inline-flex", alignItems: "center", gap: "8px", padding: "4px"}}>
+    <span style={json% {display: "inline-block", width: "20px", height: "20px", backgroundColor: $(cssColor), border: "1px solid #666", borderRadius: "3px"}}></span>
+    <code style={json% {fontSize: "1em"}}>{.text cssColor}</code>
   </span>
 
 /-- Get a unicode color square approximation for a hex color -/
@@ -163,10 +163,10 @@ def hexPresenter : ProofWidgets.ExprPresenter where
       let cssColor := color.toHexString
       let pp ← Meta.ppExpr e
       -- Simple colored square + text
-      return <span style="display: inline-flex; align-items: center; gap: 4px;">
-        <span style={s!"background: {cssColor}; width: 12px; height: 12px; border: 1px solid gray; border-radius: 2px; display: inline-block;"}></span>
+      return <span style={json% {display: "inline-flex", alignItems: "center", gap: "4px"}}>
+        <span style={json% {background: $(cssColor), width: "12px", height: "12px", border: "1px solid gray", borderRadius: "2px", display: "inline-block"}}></span>
         <code>{.text cssColor}</code>
-        <span style="opacity: 0.5;">{.text s!" ({pp})"}</span>
+        <span style={json% {opacity: "0.5"}}>{.text s!" ({pp})"}</span>
       </span>
     | none =>
       -- Can't evaluate statically, just show the expression
