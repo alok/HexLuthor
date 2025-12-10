@@ -9,7 +9,7 @@
 
   The @[expr_presenter] also shows colors when viewing Hex expressions in goals.
 -/
-import HexLuthor.HexColor
+import HexLuthor.Widget
 import ProofWidgets.Component.Panel.SelectionPanel
 
 open HexLuthor
@@ -26,7 +26,7 @@ open HexLuthor
 #check #x4169E1  -- Royal Blue
 
 -- Use in definitions
-def myFavoriteColor : Hex := #x4169E1  -- Royal Blue
+def myFavoriteColor : Hex := #x56585D  -- Royal Blue
 def sunset : Hex := #xFF6347  -- Tomato
 def ocean : Hex := #x006994  -- Sea blue
 

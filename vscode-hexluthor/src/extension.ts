@@ -1,9 +1,9 @@
 import * as vscode from 'vscode';
 
-// Regex to match #xRRGGBB syntax in Lean files (no quotes!)
+// Regex to find CANDIDATE positions - we validate them via LSP
 const HEX_COLOR_REGEX = /#x([0-9A-Fa-f]{6})\b/g;
 
-// Cache decoration types to avoid recreating them
+// Cache decoration types by color
 const decorationCache = new Map<string, vscode.TextEditorDecorationType>();
 
 function getDecorationForColor(hexColor: string): vscode.TextEditorDecorationType {
@@ -19,13 +19,44 @@ function getDecorationForColor(hexColor: string): vscode.TextEditorDecorationTyp
   return decoration;
 }
 
-function updateDecorations(editor: vscode.TextEditor) {
+// Check if position is a Hex type via Lean LSP hover
+async function isHexType(document: vscode.TextDocument, position: vscode.Position): Promise<boolean> {
+  try {
+    const hovers = await vscode.commands.executeCommand<vscode.Hover[]>(
+      'vscode.executeHoverProvider',
+      document.uri,
+      position
+    );
+
+    if (!hovers || hovers.length === 0) return false;
+
+    // Check if any hover content mentions "Hex" type
+    for (const hover of hovers) {
+      for (const content of hover.contents) {
+        const text = typeof content === 'string'
+          ? content
+          : (content as vscode.MarkdownString).value;
+
+        // Lean's hover shows type info like ": Hex" or "Hex"
+        if (text && (text.includes(': Hex') || text.match(/\bHex\b/))) {
+          return true;
+        }
+      }
+    }
+  } catch {
+    // LSP not ready or error - skip
+  }
+  return false;
+}
+
+async function updateDecorations(editor: vscode.TextEditor) {
   if (!editor.document.fileName.endsWith('.lean')) return;
 
   const text = editor.document.getText();
-
-  // Group ranges by color
   const colorRanges = new Map<string, vscode.Range[]>();
+
+  // Find all candidate positions
+  const candidates: { hexValue: string; range: vscode.Range; position: vscode.Position }[] = [];
 
   let match: RegExpExecArray | null;
   const regex = new RegExp(HEX_COLOR_REGEX.source, 'g');
@@ -34,40 +65,73 @@ function updateDecorations(editor: vscode.TextEditor) {
     const hexValue = match[1].toUpperCase();
     const startPos = editor.document.positionAt(match.index);
     const endPos = editor.document.positionAt(match.index + match[0].length);
-    const range = new vscode.Range(startPos, endPos);
-
-    if (!colorRanges.has(hexValue)) {
-      colorRanges.set(hexValue, []);
-    }
-    colorRanges.get(hexValue)!.push(range);
+    candidates.push({
+      hexValue,
+      range: new vscode.Range(startPos, endPos),
+      position: startPos
+    });
   }
 
-  // Clear old decorations not in current document
+  // Validate candidates via LSP (batched to avoid overload)
+  const BATCH_SIZE = 10;
+  const validations: typeof candidates & { isValid: boolean }[] = [];
+
+  for (let i = 0; i < candidates.length; i += BATCH_SIZE) {
+    const batch = candidates.slice(i, i + BATCH_SIZE);
+    const results = await Promise.all(
+      batch.map(async c => ({
+        ...c,
+        isValid: await isHexType(editor.document, c.position)
+      }))
+    );
+    validations.push(...results);
+  }
+
+  // Group valid ranges by color
+  for (const { hexValue, range, isValid } of validations) {
+    if (isValid) {
+      if (!colorRanges.has(hexValue)) {
+        colorRanges.set(hexValue, []);
+      }
+      colorRanges.get(hexValue)!.push(range);
+    }
+  }
+
+  // Clear old decorations
   for (const [color, decoration] of decorationCache) {
     if (!colorRanges.has(color)) {
       editor.setDecorations(decoration, []);
     }
   }
 
-  // Apply decorations grouped by color
+  // Apply decorations
   for (const [hexColor, ranges] of colorRanges) {
     const decoration = getDecorationForColor(hexColor);
     editor.setDecorations(decoration, ranges);
   }
 }
 
-// Also keep DocumentColorProvider for the color picker UI
+// Debounce to avoid spamming LSP
+let updateTimeout: NodeJS.Timeout | undefined;
+function scheduleUpdate(editor: vscode.TextEditor) {
+  if (updateTimeout) clearTimeout(updateTimeout);
+  updateTimeout = setTimeout(() => updateDecorations(editor), 300);
+}
+
+// Color provider for hover palette (allows picking colors)
+// Note: The small swatches are required for the picker to work
 class HexLuthorColorProvider implements vscode.DocumentColorProvider {
   provideDocumentColors(
     document: vscode.TextDocument,
     _token: vscode.CancellationToken
   ): vscode.ProviderResult<vscode.ColorInformation[]> {
+    if (!document.fileName.endsWith('.lean')) return [];
+
     const colors: vscode.ColorInformation[] = [];
     const text = document.getText();
-
-    let match: RegExpExecArray | null;
     const regex = new RegExp(HEX_COLOR_REGEX.source, 'g');
 
+    let match: RegExpExecArray | null;
     while ((match = regex.exec(text)) !== null) {
       const hexValue = match[1];
       const startPos = document.positionAt(match.index);
@@ -78,8 +142,7 @@ class HexLuthorColorProvider implements vscode.DocumentColorProvider {
       const g = parseInt(hexValue.substring(2, 4), 16) / 255;
       const b = parseInt(hexValue.substring(4, 6), 16) / 255;
 
-      const color = new vscode.Color(r, g, b, 1);
-      colors.push(new vscode.ColorInformation(range, color));
+      colors.push(new vscode.ColorInformation(range, new vscode.Color(r, g, b, 1)));
     }
 
     return colors;
@@ -106,38 +169,35 @@ class HexLuthorColorProvider implements vscode.DocumentColorProvider {
 }
 
 export function activate(context: vscode.ExtensionContext) {
-  console.log('HexLuthor Color Preview activated');
+  console.log('HexLuthor Color Preview activated (LSP-driven)');
 
-  // Register color provider for color picker (2-way editing)
+  // Register color provider for hover palette
   const colorProvider = new HexLuthorColorProvider();
   context.subscriptions.push(
     vscode.languages.registerColorProvider({ language: 'lean4', scheme: 'file' }, colorProvider),
     vscode.languages.registerColorProvider({ language: 'lean', scheme: 'file' }, colorProvider)
   );
 
-  // Update decorations on editor changes
   const updateActiveEditor = () => {
     const editor = vscode.window.activeTextEditor;
-    if (editor) updateDecorations(editor);
+    if (editor) scheduleUpdate(editor);
   };
 
-  // Initial update
   updateActiveEditor();
 
-  // Subscribe to events
   context.subscriptions.push(
     vscode.window.onDidChangeActiveTextEditor(updateActiveEditor),
     vscode.workspace.onDidChangeTextDocument(e => {
       const editor = vscode.window.activeTextEditor;
       if (editor && e.document === editor.document) {
-        updateDecorations(editor);
+        scheduleUpdate(editor);
       }
     })
   );
 }
 
 export function deactivate() {
-  // Clean up decoration types
+  if (updateTimeout) clearTimeout(updateTimeout);
   for (const decoration of decorationCache.values()) {
     decoration.dispose();
   }
