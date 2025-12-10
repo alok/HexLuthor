@@ -59,16 +59,146 @@ def fromHexString? (s : String) : Option Hex := do
 
 end Hex
 
+/-! ## Named Colors Database (CSS/X11 standard) -/
+
+/-- A named color entry -/
+structure NamedColor where
+  name : String
+  color : Hex
+  deriving Repr
+
+/-- CSS named colors - a curated subset of common colors -/
+def namedColors : Array NamedColor := #[
+  -- Reds
+  ⟨"Red", ⟨255, 0, 0⟩⟩,
+  ⟨"Crimson", ⟨220, 20, 60⟩⟩,
+  ⟨"Firebrick", ⟨178, 34, 34⟩⟩,
+  ⟨"DarkRed", ⟨139, 0, 0⟩⟩,
+  ⟨"IndianRed", ⟨205, 92, 92⟩⟩,
+  ⟨"Salmon", ⟨250, 128, 114⟩⟩,
+  ⟨"Tomato", ⟨255, 99, 71⟩⟩,
+  ⟨"Coral", ⟨255, 127, 80⟩⟩,
+  -- Oranges
+  ⟨"Orange", ⟨255, 165, 0⟩⟩,
+  ⟨"DarkOrange", ⟨255, 140, 0⟩⟩,
+  ⟨"OrangeRed", ⟨255, 69, 0⟩⟩,
+  -- Yellows
+  ⟨"Yellow", ⟨255, 255, 0⟩⟩,
+  ⟨"Gold", ⟨255, 215, 0⟩⟩,
+  ⟨"Khaki", ⟨240, 230, 140⟩⟩,
+  ⟨"LemonChiffon", ⟨255, 250, 205⟩⟩,
+  -- Greens
+  ⟨"Green", ⟨0, 128, 0⟩⟩,
+  ⟨"Lime", ⟨0, 255, 0⟩⟩,
+  ⟨"LimeGreen", ⟨50, 205, 50⟩⟩,
+  ⟨"ForestGreen", ⟨34, 139, 34⟩⟩,
+  ⟨"DarkGreen", ⟨0, 100, 0⟩⟩,
+  ⟨"SeaGreen", ⟨46, 139, 87⟩⟩,
+  ⟨"SpringGreen", ⟨0, 255, 127⟩⟩,
+  ⟨"Olive", ⟨128, 128, 0⟩⟩,
+  ⟨"OliveDrab", ⟨107, 142, 35⟩⟩,
+  -- Cyans
+  ⟨"Cyan", ⟨0, 255, 255⟩⟩,
+  ⟨"Aqua", ⟨0, 255, 255⟩⟩,
+  ⟨"Teal", ⟨0, 128, 128⟩⟩,
+  ⟨"DarkCyan", ⟨0, 139, 139⟩⟩,
+  ⟨"Turquoise", ⟨64, 224, 208⟩⟩,
+  ⟨"DarkTurquoise", ⟨0, 206, 209⟩⟩,
+  -- Blues
+  ⟨"Blue", ⟨0, 0, 255⟩⟩,
+  ⟨"Navy", ⟨0, 0, 128⟩⟩,
+  ⟨"DarkBlue", ⟨0, 0, 139⟩⟩,
+  ⟨"MediumBlue", ⟨0, 0, 205⟩⟩,
+  ⟨"RoyalBlue", ⟨65, 105, 225⟩⟩,
+  ⟨"SteelBlue", ⟨70, 130, 180⟩⟩,
+  ⟨"DodgerBlue", ⟨30, 144, 255⟩⟩,
+  ⟨"DeepSkyBlue", ⟨0, 191, 255⟩⟩,
+  ⟨"SkyBlue", ⟨135, 206, 235⟩⟩,
+  ⟨"CornflowerBlue", ⟨100, 149, 237⟩⟩,
+  -- Purples
+  ⟨"Purple", ⟨128, 0, 128⟩⟩,
+  ⟨"Indigo", ⟨75, 0, 130⟩⟩,
+  ⟨"DarkViolet", ⟨148, 0, 211⟩⟩,
+  ⟨"DarkOrchid", ⟨153, 50, 204⟩⟩,
+  ⟨"MediumOrchid", ⟨186, 85, 211⟩⟩,
+  ⟨"Violet", ⟨238, 130, 238⟩⟩,
+  ⟨"Magenta", ⟨255, 0, 255⟩⟩,
+  ⟨"Orchid", ⟨218, 112, 214⟩⟩,
+  ⟨"Plum", ⟨221, 160, 221⟩⟩,
+  -- Pinks
+  ⟨"Pink", ⟨255, 192, 203⟩⟩,
+  ⟨"HotPink", ⟨255, 105, 180⟩⟩,
+  ⟨"DeepPink", ⟨255, 20, 147⟩⟩,
+  ⟨"LightPink", ⟨255, 182, 193⟩⟩,
+  -- Browns
+  ⟨"Brown", ⟨165, 42, 42⟩⟩,
+  ⟨"Maroon", ⟨128, 0, 0⟩⟩,
+  ⟨"SaddleBrown", ⟨139, 69, 19⟩⟩,
+  ⟨"Sienna", ⟨160, 82, 45⟩⟩,
+  ⟨"Chocolate", ⟨210, 105, 30⟩⟩,
+  ⟨"Peru", ⟨205, 133, 63⟩⟩,
+  ⟨"Tan", ⟨210, 180, 140⟩⟩,
+  ⟨"SandyBrown", ⟨244, 164, 96⟩⟩,
+  -- Grays
+  ⟨"White", ⟨255, 255, 255⟩⟩,
+  ⟨"Snow", ⟨255, 250, 250⟩⟩,
+  ⟨"Ivory", ⟨255, 255, 240⟩⟩,
+  ⟨"WhiteSmoke", ⟨245, 245, 245⟩⟩,
+  ⟨"Gainsboro", ⟨220, 220, 220⟩⟩,
+  ⟨"Silver", ⟨192, 192, 192⟩⟩,
+  ⟨"LightGray", ⟨211, 211, 211⟩⟩,
+  ⟨"Gray", ⟨128, 128, 128⟩⟩,
+  ⟨"DarkGray", ⟨169, 169, 169⟩⟩,
+  ⟨"DimGray", ⟨105, 105, 105⟩⟩,
+  ⟨"Black", ⟨0, 0, 0⟩⟩,
+  -- Special
+  ⟨"SlateGray", ⟨112, 128, 144⟩⟩,
+  ⟨"DarkSlateGray", ⟨47, 79, 79⟩⟩,
+  ⟨"LightSlateGray", ⟨119, 136, 153⟩⟩,
+  ⟨"Beige", ⟨245, 245, 220⟩⟩,
+  ⟨"Wheat", ⟨245, 222, 179⟩⟩,
+  ⟨"Lavender", ⟨230, 230, 250⟩⟩,
+  ⟨"MistyRose", ⟨255, 228, 225⟩⟩,
+  ⟨"AliceBlue", ⟨240, 248, 255⟩⟩,
+  ⟨"Honeydew", ⟨240, 255, 240⟩⟩,
+  ⟨"MintCream", ⟨245, 255, 250⟩⟩
+]
+
+/-- Squared Euclidean distance between two colors in RGB space -/
+def colorDistanceSq (c1 c2 : Hex) : Nat :=
+  let dr := (c1.r.toNat : Int) - c2.r.toNat
+  let dg := (c1.g.toNat : Int) - c2.g.toNat
+  let db := (c1.b.toNat : Int) - c2.b.toNat
+  (dr * dr + dg * dg + db * db).toNat
+
+/-- Find the closest named color to a given hex color -/
+def closestColorName (c : Hex) : String :=
+  let result := namedColors.foldl (init := ("Unknown", 3 * 256 * 256)) fun (bestName, bestDist) nc =>
+    let dist := colorDistanceSq c nc.color
+    if dist < bestDist then (nc.name, dist) else (bestName, bestDist)
+  result.1
+
+/-- Check if a color is an exact match to a named color -/
+def exactColorName? (c : Hex) : Option String :=
+  namedColors.findSome? fun nc => if nc.color == c then some nc.name else none
+
+/-- Get the color name (exact match if available, otherwise closest) -/
+def colorName (c : Hex) : String :=
+  match exactColorName? c with
+  | some name => name
+  | none => s!"≈{closestColorName c}"
+
 /-! ## Custom Syntax: #h"RRGGBB" -/
 
 /-- Term syntax for hex color literals: #h"RRGGBB" -/
 syntax:max (name := hexColorLit) "#h" noWs str : term
 
-/-- Create HTML for a hex color preview -/
-def hexColorHtml (cssColor : String) : ProofWidgets.Html :=
+/-- Create HTML for a hex color preview with name -/
+def hexColorHtml (cssColor : String) (name : String) : ProofWidgets.Html :=
   <span style={json% {display: "inline-flex", alignItems: "center", gap: "8px", padding: "4px"}}>
     <span style={json% {display: "inline-block", width: "20px", height: "20px", backgroundColor: $(cssColor), border: "1px solid #666", borderRadius: "3px"}}></span>
     <code style={json% {fontSize: "1em"}}>{.text cssColor}</code>
+    <span style={json% {opacity: "0.7", fontStyle: "italic"}}>{.text name}</span>
   </span>
 
 /-- Get a unicode color square approximation for a hex color -/
@@ -100,7 +230,8 @@ def elabHexColorCore (hexVal : String) (stx : Syntax) (expectedType? : Option Ex
     let hexExpr ← elabTerm (← `(Hex.mk $r $g $b)) expectedType?
 
     let cssColor := color.toHexString
-    let html := hexColorHtml cssColor
+    let name := colorName color
+    let html := hexColorHtml cssColor name
 
     -- Save panel widget info for the infoview (shows when clicking on term)
     Widget.savePanelWidgetInfo
@@ -161,12 +292,14 @@ def hexPresenter : ProofWidgets.ExprPresenter where
     match ← extractHexFromExpr? e with
     | some color =>
       let cssColor := color.toHexString
+      let name := colorName color
       let pp ← Meta.ppExpr e
-      -- Simple colored square + text
+      -- Colored square + hex + name
       return <span style={json% {display: "inline-flex", alignItems: "center", gap: "4px"}}>
         <span style={json% {background: $(cssColor), width: "12px", height: "12px", border: "1px solid gray", borderRadius: "2px", display: "inline-block"}}></span>
         <code>{.text cssColor}</code>
-        <span style={json% {opacity: "0.5"}}>{.text s!" ({pp})"}</span>
+        <span style={json% {opacity: "0.7", fontStyle: "italic"}}>{.text name}</span>
+        <span style={json% {opacity: "0.4"}}>{.text s!" ({pp})"}</span>
       </span>
     | none =>
       -- Can't evaluate statically, just show the expression
