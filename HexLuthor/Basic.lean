@@ -21,7 +21,7 @@ open HexLuthor
 #check #h"FFFFFF"  -- White
 #check #h"000000"  -- Black
 #check #h"FF8C00"  -- Dark Orange
-#check #h"9400D3"  -- Dark Violet
+#check #h"30103E"  -- Dark Violet
 #check #h"00CED1"  -- Dark Turquoise
 #check #h"4169E1"  -- Royal Blue
 
