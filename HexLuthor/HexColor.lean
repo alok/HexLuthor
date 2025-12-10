@@ -307,10 +307,10 @@ def colorName (c : Hex) : String :=
   | some name => name
   | none => s!"≈{closestColorName c}"
 
-/-! ## Custom Syntax: #h"RRGGBB" -/
+/-! ## Custom Syntax: #xRRGGBB -/
 
-/-- Term syntax for hex color literals: #h"RRGGBB" -/
-syntax:max (name := hexColorLit) "#h" noWs str : term
+/-- Term syntax for hex color literals: #xRRGGBB (no quotes needed!) -/
+syntax:max (name := hexColorLit) "#x" noWs hexnum : term
 
 /-- Create HTML for a hex color preview with name -/
 def hexColorHtml (cssColor : String) (name : String) : ProofWidgets.Html :=
@@ -375,12 +375,13 @@ def elabHexColorCore (hexVal : String) (stx : Syntax) (expectedType? : Option Ex
   | none =>
     throwError "Invalid hex color: \"{hexVal}\". Expected 6 hex digits (RRGGBB)"
 
-/-- Elaborator for #h"RRGGBB" syntax -/
+/-- Elaborator for #xRRGGBB syntax -/
 @[term_elab hexColorLit]
 def elabHexColor : TermElab := fun stx expectedType? => do
   match stx with
-  | `(#h$hexStr:str) =>
-    let hexVal := hexStr.getString
+  | `(#x$hexNum:hexnum) =>
+    -- hexnum node wraps an atom: hexnum[0] is the actual hex string
+    let hexVal := hexNum.raw[0].getAtomVal
     elabHexColorCore hexVal stx expectedType?
   | _ => throwUnsupportedSyntax
 

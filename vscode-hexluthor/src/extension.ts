@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 
-// Regex to match #h"RRGGBB" syntax in Lean files
-const HEX_COLOR_REGEX = /#h"([0-9A-Fa-f]{6})"/g;
+// Regex to match #xRRGGBB syntax in Lean files (no quotes!)
+const HEX_COLOR_REGEX = /#x([0-9A-Fa-f]{6})\b/g;
 
 // Cache decoration types to avoid recreating them
 const decorationCache = new Map<string, vscode.TextEditorDecorationType>();
@@ -98,8 +98,8 @@ class HexLuthorColorProvider implements vscode.DocumentColorProvider {
       .map(c => c.toString(16).padStart(2, '0').toUpperCase())
       .join('');
 
-    const presentation = new vscode.ColorPresentation(`#h"${hexString}"`);
-    presentation.textEdit = new vscode.TextEdit(context.range, `#h"${hexString}"`);
+    const presentation = new vscode.ColorPresentation(`#x${hexString}`);
+    presentation.textEdit = new vscode.TextEdit(context.range, `#x${hexString}`);
 
     return [presentation];
   }

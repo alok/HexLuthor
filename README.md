@@ -6,7 +6,7 @@ Lean 4 hex color syntax with inline VS Code visualization.
 
 ## Features
 
-- Custom `#h"RRGGBB"` syntax for hex colors
+- Custom `#xRRGGBB` syntax for hex colors (no quotes needed!)
 - Inline colored text in editor (via VS Code extension)
 - Color swatches in infoview panel (via ProofWidgets)
 - Human-friendly color names (CSS standard, closest match for non-exact)
@@ -18,10 +18,10 @@ Lean 4 hex color syntax with inline VS Code visualization.
 import HexLuthor.HexColor
 open HexLuthor
 
-#check #h"FF0000"  -- Red
-#check #h"4169E1"  -- RoyalBlue
+#check #xFF0000  -- Red
+#check #x4169E1  -- RoyalBlue
 
-def myColor : Hex := #h"00CED1"  -- DarkTurquoise
+def myColor : Hex := #x00CED1  -- DarkTurquoise
 ```
 
 ## Installation
