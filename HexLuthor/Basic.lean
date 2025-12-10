@@ -31,7 +31,7 @@ def sunset : Hex := #h"FF6347"  -- Tomato
 def ocean : Hex := #h"000000"  -- Sea blue
 
 -- Mix with the Hex API
-#eval Hex.toHexString #h"FFCC00"  -- Should print "#FFCC00"
+#eval Hex.toHexString #h"736118"  -- Should print "#FFCC00"
 #eval Hex.toHexString myFavoriteColor  -- "#4169E1"
 
 -- Example showing colors in proof goals (click on the goal to see colors)
