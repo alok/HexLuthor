@@ -11,29 +11,42 @@ namespace HexLuthor
 
 open Std.Internal.Parsec String
 
-/-- A hex color with red, green, blue components (0-255) -/
+/-- A hex color with red, green, blue, alpha components (0-255).
+    Alpha defaults to 255 (fully opaque). -/
 structure Hex where
-  r : UInt8
-  g : UInt8
-  b : UInt8
-  deriving Repr, DecidableEq, Inhabited
+  /-- Red component. `0` is no red, `255` is full red. -/
+  r : UInt8 := 0
+  /-- Green component. `0` is no green, `255` is full green. -/
+  g : UInt8 := 0
+  /-- Blue component. `0` is no blue, `255` is full blue. -/
+  b : UInt8 := 0
+  /-- Alpha component. `0` is fully transparent, `255` is fully opaque. -/
+  a : UInt8 := 255
+  deriving BEq, Hashable, Repr, DecidableEq, Inhabited
 
 namespace Hex
 
-def white : Hex := ⟨255, 255, 255⟩
-def black : Hex := ⟨0, 0, 0⟩
-def red : Hex := ⟨255, 0, 0⟩
-def green : Hex := ⟨0, 255, 0⟩
-def blue : Hex := ⟨0, 0, 255⟩
+/-- Create an opaque RGB color (alpha = 255) -/
+@[inline] def rgb (r g b : UInt8) : Hex := ⟨r, g, b, 255⟩
+
+/-- Create an RGBA color with explicit alpha -/
+@[inline] def rgba (r g b a : UInt8) : Hex := ⟨r, g, b, a⟩
+
+def white : Hex := rgb 255 255 255
+def black : Hex := rgb 0 0 0
+def red : Hex := rgb 255 0 0
+def green : Hex := rgb 0 255 0
+def blue : Hex := rgb 0 0 255
 
 /-- Convert a hex color to CSS hex string like "#RRGGBB" -/
 def toHexString (c : Hex) : String :=
-  let hexChars := "0123456789ABCDEF".toList
+  let hexChars : Vector Char 16 := #v[
+    '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F']
   let toHex2 (n : UInt8) : String :=
     let hi := (n.toNat / 16) % 16
     let lo := n.toNat % 16
-    let hiChar := hexChars[hi]!
-    let loChar := hexChars[lo]!
+    let hiChar := hexChars[hi]
+    let loChar := hexChars[lo]
     s!"{hiChar}{loChar}"
   s!"#{toHex2 c.r}{toHex2 c.g}{toHex2 c.b}"
 
@@ -51,13 +64,14 @@ def hexPair : Std.Internal.Parsec.String.Parser UInt8 := do
   let lo ← hexDigit
   return (hexCharToNat hi * 16 + hexCharToNat lo).toUInt8
 
-/-- Parse a 6-digit hex color string "RRGGBB" into a Hex -/
+/-- Parse a 6 or 8 digit hex color string "RRGGBB" or "RRGGBBAA" into a Hex -/
 def hexColorParser : Std.Internal.Parsec.String.Parser Hex := do
   let r ← hexPair
   let g ← hexPair
   let b ← hexPair
-  eof
-  return ⟨r, g, b⟩
+  -- Optional alpha channel
+  let a ← (hexPair <* eof) <|> (eof *> pure 255)
+  return { r, g, b, a }
 
 /-- Parse a hex string like "RRGGBB" (without #) to a Hex color -/
 def fromHexString? (s : String) : Option Hex :=
@@ -78,208 +92,208 @@ structure NamedColor where
 /-- CSS named colors - comprehensive coverage including dark/light variants -/
 def namedColors : Array NamedColor := #[
   -- Reds (light to dark)
-  ⟨"LightCoral", ⟨240, 128, 128⟩⟩,
-  ⟨"Salmon", ⟨250, 128, 114⟩⟩,
-  ⟨"DarkSalmon", ⟨233, 150, 122⟩⟩,
-  ⟨"LightSalmon", ⟨255, 160, 122⟩⟩,
-  ⟨"Coral", ⟨255, 127, 80⟩⟩,
-  ⟨"Tomato", ⟨255, 99, 71⟩⟩,
-  ⟨"Red", ⟨255, 0, 0⟩⟩,
-  ⟨"Crimson", ⟨220, 20, 60⟩⟩,
-  ⟨"IndianRed", ⟨205, 92, 92⟩⟩,
-  ⟨"Firebrick", ⟨178, 34, 34⟩⟩,
-  ⟨"DarkRed", ⟨139, 0, 0⟩⟩,
-  ⟨"Maroon", ⟨128, 0, 0⟩⟩,
+  ⟨"LightCoral", { r := 240, g := 128, b := 128 }⟩,
+  ⟨"Salmon", { r := 250, g := 128, b := 114 }⟩,
+  ⟨"DarkSalmon", { r := 233, g := 150, b := 122 }⟩,
+  ⟨"LightSalmon", { r := 255, g := 160, b := 122 }⟩,
+  ⟨"Coral", { r := 255, g := 127, b := 80 }⟩,
+  ⟨"Tomato", { r := 255, g := 99, b := 71 }⟩,
+  ⟨"Red", { r := 255, g := 0, b := 0 }⟩,
+  ⟨"Crimson", { r := 220, g := 20, b := 60 }⟩,
+  ⟨"IndianRed", { r := 205, g := 92, b := 92 }⟩,
+  ⟨"Firebrick", { r := 178, g := 34, b := 34 }⟩,
+  ⟨"DarkRed", { r := 139, g := 0, b := 0 }⟩,
+  ⟨"Maroon", { r := 128, g := 0, b := 0 }⟩,
 
   -- Oranges
-  ⟨"LightOrange", ⟨255, 200, 128⟩⟩,
-  ⟨"PeachPuff", ⟨255, 218, 185⟩⟩,
-  ⟨"Moccasin", ⟨255, 228, 181⟩⟩,
-  ⟨"PapayaWhip", ⟨255, 239, 213⟩⟩,
-  ⟨"Orange", ⟨255, 165, 0⟩⟩,
-  ⟨"DarkOrange", ⟨255, 140, 0⟩⟩,
-  ⟨"OrangeRed", ⟨255, 69, 0⟩⟩,
-  ⟨"BurntOrange", ⟨204, 85, 0⟩⟩,
+  ⟨"LightOrange", { r := 255, g := 200, b := 128 }⟩,
+  ⟨"PeachPuff", { r := 255, g := 218, b := 185 }⟩,
+  ⟨"Moccasin", { r := 255, g := 228, b := 181 }⟩,
+  ⟨"PapayaWhip", { r := 255, g := 239, b := 213 }⟩,
+  ⟨"Orange", { r := 255, g := 165, b := 0 }⟩,
+  ⟨"DarkOrange", { r := 255, g := 140, b := 0 }⟩,
+  ⟨"OrangeRed", { r := 255, g := 69, b := 0 }⟩,
+  ⟨"BurntOrange", { r := 204, g := 85, b := 0 }⟩,
 
   -- Yellows
-  ⟨"LightYellow", ⟨255, 255, 224⟩⟩,
-  ⟨"LemonChiffon", ⟨255, 250, 205⟩⟩,
-  ⟨"LightGoldenrodYellow", ⟨250, 250, 210⟩⟩,
-  ⟨"PaleGoldenrod", ⟨238, 232, 170⟩⟩,
-  ⟨"Yellow", ⟨255, 255, 0⟩⟩,
-  ⟨"Gold", ⟨255, 215, 0⟩⟩,
-  ⟨"Goldenrod", ⟨218, 165, 32⟩⟩,
-  ⟨"DarkGoldenrod", ⟨184, 134, 11⟩⟩,
-  ⟨"Khaki", ⟨240, 230, 140⟩⟩,
-  ⟨"DarkKhaki", ⟨189, 183, 107⟩⟩,
+  ⟨"LightYellow", { r := 255, g := 255, b := 224 }⟩,
+  ⟨"LemonChiffon", { r := 255, g := 250, b := 205 }⟩,
+  ⟨"LightGoldenrodYellow", { r := 250, g := 250, b := 210 }⟩,
+  ⟨"PaleGoldenrod", { r := 238, g := 232, b := 170 }⟩,
+  ⟨"Yellow", { r := 255, g := 255, b := 0 }⟩,
+  ⟨"Gold", { r := 255, g := 215, b := 0 }⟩,
+  ⟨"Goldenrod", { r := 218, g := 165, b := 32 }⟩,
+  ⟨"DarkGoldenrod", { r := 184, g := 134, b := 11 }⟩,
+  ⟨"Khaki", { r := 240, g := 230, b := 140 }⟩,
+  ⟨"DarkKhaki", { r := 189, g := 183, b := 107 }⟩,
 
   -- Greens (light to dark)
-  ⟨"GreenYellow", ⟨173, 255, 47⟩⟩,
-  ⟨"Chartreuse", ⟨127, 255, 0⟩⟩,
-  ⟨"LawnGreen", ⟨124, 252, 0⟩⟩,
-  ⟨"Lime", ⟨0, 255, 0⟩⟩,
-  ⟨"LimeGreen", ⟨50, 205, 50⟩⟩,
-  ⟨"PaleGreen", ⟨152, 251, 152⟩⟩,
-  ⟨"LightGreen", ⟨144, 238, 144⟩⟩,
-  ⟨"MediumSpringGreen", ⟨0, 250, 154⟩⟩,
-  ⟨"SpringGreen", ⟨0, 255, 127⟩⟩,
-  ⟨"MediumSeaGreen", ⟨60, 179, 113⟩⟩,
-  ⟨"SeaGreen", ⟨46, 139, 87⟩⟩,
-  ⟨"Green", ⟨0, 128, 0⟩⟩,
-  ⟨"ForestGreen", ⟨34, 139, 34⟩⟩,
-  ⟨"DarkGreen", ⟨0, 100, 0⟩⟩,
-  ⟨"DarkOliveGreen", ⟨85, 107, 47⟩⟩,
-  ⟨"Olive", ⟨128, 128, 0⟩⟩,
-  ⟨"OliveDrab", ⟨107, 142, 35⟩⟩,
-  ⟨"YellowGreen", ⟨154, 205, 50⟩⟩,
+  ⟨"GreenYellow", { r := 173, g := 255, b := 47 }⟩,
+  ⟨"Chartreuse", { r := 127, g := 255, b := 0 }⟩,
+  ⟨"LawnGreen", { r := 124, g := 252, b := 0 }⟩,
+  ⟨"Lime", { r := 0, g := 255, b := 0 }⟩,
+  ⟨"LimeGreen", { r := 50, g := 205, b := 50 }⟩,
+  ⟨"PaleGreen", { r := 152, g := 251, b := 152 }⟩,
+  ⟨"LightGreen", { r := 144, g := 238, b := 144 }⟩,
+  ⟨"MediumSpringGreen", { r := 0, g := 250, b := 154 }⟩,
+  ⟨"SpringGreen", { r := 0, g := 255, b := 127 }⟩,
+  ⟨"MediumSeaGreen", { r := 60, g := 179, b := 113 }⟩,
+  ⟨"SeaGreen", { r := 46, g := 139, b := 87 }⟩,
+  ⟨"Green", { r := 0, g := 128, b := 0 }⟩,
+  ⟨"ForestGreen", { r := 34, g := 139, b := 34 }⟩,
+  ⟨"DarkGreen", { r := 0, g := 100, b := 0 }⟩,
+  ⟨"DarkOliveGreen", { r := 85, g := 107, b := 47 }⟩,
+  ⟨"Olive", { r := 128, g := 128, b := 0 }⟩,
+  ⟨"OliveDrab", { r := 107, g := 142, b := 35 }⟩,
+  ⟨"YellowGreen", { r := 154, g := 205, b := 50 }⟩,
 
   -- Cyans / Aquas
-  ⟨"LightCyan", ⟨224, 255, 255⟩⟩,
-  ⟨"PaleTurquoise", ⟨175, 238, 238⟩⟩,
-  ⟨"Aquamarine", ⟨127, 255, 212⟩⟩,
-  ⟨"MediumAquamarine", ⟨102, 205, 170⟩⟩,
-  ⟨"Turquoise", ⟨64, 224, 208⟩⟩,
-  ⟨"MediumTurquoise", ⟨72, 209, 204⟩⟩,
-  ⟨"DarkTurquoise", ⟨0, 206, 209⟩⟩,
-  ⟨"Cyan", ⟨0, 255, 255⟩⟩,
-  ⟨"Aqua", ⟨0, 255, 255⟩⟩,
-  ⟨"LightSeaGreen", ⟨32, 178, 170⟩⟩,
-  ⟨"CadetBlue", ⟨95, 158, 160⟩⟩,
-  ⟨"DarkCyan", ⟨0, 139, 139⟩⟩,
-  ⟨"Teal", ⟨0, 128, 128⟩⟩,
+  ⟨"LightCyan", { r := 224, g := 255, b := 255 }⟩,
+  ⟨"PaleTurquoise", { r := 175, g := 238, b := 238 }⟩,
+  ⟨"Aquamarine", { r := 127, g := 255, b := 212 }⟩,
+  ⟨"MediumAquamarine", { r := 102, g := 205, b := 170 }⟩,
+  ⟨"Turquoise", { r := 64, g := 224, b := 208 }⟩,
+  ⟨"MediumTurquoise", { r := 72, g := 209, b := 204 }⟩,
+  ⟨"DarkTurquoise", { r := 0, g := 206, b := 209 }⟩,
+  ⟨"Cyan", { r := 0, g := 255, b := 255 }⟩,
+  ⟨"Aqua", { r := 0, g := 255, b := 255 }⟩,
+  ⟨"LightSeaGreen", { r := 32, g := 178, b := 170 }⟩,
+  ⟨"CadetBlue", { r := 95, g := 158, b := 160 }⟩,
+  ⟨"DarkCyan", { r := 0, g := 139, b := 139 }⟩,
+  ⟨"Teal", { r := 0, g := 128, b := 128 }⟩,
 
   -- Blues (light to dark)
-  ⟨"LightBlue", ⟨173, 216, 230⟩⟩,
-  ⟨"PowderBlue", ⟨176, 224, 230⟩⟩,
-  ⟨"SkyBlue", ⟨135, 206, 235⟩⟩,
-  ⟨"LightSkyBlue", ⟨135, 206, 250⟩⟩,
-  ⟨"DeepSkyBlue", ⟨0, 191, 255⟩⟩,
-  ⟨"DodgerBlue", ⟨30, 144, 255⟩⟩,
-  ⟨"CornflowerBlue", ⟨100, 149, 237⟩⟩,
-  ⟨"SteelBlue", ⟨70, 130, 180⟩⟩,
-  ⟨"RoyalBlue", ⟨65, 105, 225⟩⟩,
-  ⟨"Blue", ⟨0, 0, 255⟩⟩,
-  ⟨"MediumBlue", ⟨0, 0, 205⟩⟩,
-  ⟨"DarkBlue", ⟨0, 0, 139⟩⟩,
-  ⟨"Navy", ⟨0, 0, 128⟩⟩,
-  ⟨"MidnightBlue", ⟨25, 25, 112⟩⟩,
+  ⟨"LightBlue", { r := 173, g := 216, b := 230 }⟩,
+  ⟨"PowderBlue", { r := 176, g := 224, b := 230 }⟩,
+  ⟨"SkyBlue", { r := 135, g := 206, b := 235 }⟩,
+  ⟨"LightSkyBlue", { r := 135, g := 206, b := 250 }⟩,
+  ⟨"DeepSkyBlue", { r := 0, g := 191, b := 255 }⟩,
+  ⟨"DodgerBlue", { r := 30, g := 144, b := 255 }⟩,
+  ⟨"CornflowerBlue", { r := 100, g := 149, b := 237 }⟩,
+  ⟨"SteelBlue", { r := 70, g := 130, b := 180 }⟩,
+  ⟨"RoyalBlue", { r := 65, g := 105, b := 225 }⟩,
+  ⟨"Blue", { r := 0, g := 0, b := 255 }⟩,
+  ⟨"MediumBlue", { r := 0, g := 0, b := 205 }⟩,
+  ⟨"DarkBlue", { r := 0, g := 0, b := 139 }⟩,
+  ⟨"Navy", { r := 0, g := 0, b := 128 }⟩,
+  ⟨"MidnightBlue", { r := 25, g := 25, b := 112 }⟩,
 
   -- Purples / Violets (light to very dark)
-  ⟨"Lavender", ⟨230, 230, 250⟩⟩,
-  ⟨"Thistle", ⟨216, 191, 216⟩⟩,
-  ⟨"Plum", ⟨221, 160, 221⟩⟩,
-  ⟨"Violet", ⟨238, 130, 238⟩⟩,
-  ⟨"Orchid", ⟨218, 112, 214⟩⟩,
-  ⟨"Fuchsia", ⟨255, 0, 255⟩⟩,
-  ⟨"Magenta", ⟨255, 0, 255⟩⟩,
-  ⟨"MediumOrchid", ⟨186, 85, 211⟩⟩,
-  ⟨"MediumPurple", ⟨147, 112, 219⟩⟩,
-  ⟨"BlueViolet", ⟨138, 43, 226⟩⟩,
-  ⟨"DarkViolet", ⟨148, 0, 211⟩⟩,
-  ⟨"DarkOrchid", ⟨153, 50, 204⟩⟩,
-  ⟨"DarkMagenta", ⟨139, 0, 139⟩⟩,
-  ⟨"Purple", ⟨128, 0, 128⟩⟩,
-  ⟨"RebeccaPurple", ⟨102, 51, 153⟩⟩,
-  ⟨"MediumSlateBlue", ⟨123, 104, 238⟩⟩,
-  ⟨"SlateBlue", ⟨106, 90, 205⟩⟩,
-  ⟨"DarkSlateBlue", ⟨72, 61, 139⟩⟩,
-  ⟨"Indigo", ⟨75, 0, 130⟩⟩,
+  ⟨"Lavender", { r := 230, g := 230, b := 250 }⟩,
+  ⟨"Thistle", { r := 216, g := 191, b := 216 }⟩,
+  ⟨"Plum", { r := 221, g := 160, b := 221 }⟩,
+  ⟨"Violet", { r := 238, g := 130, b := 238 }⟩,
+  ⟨"Orchid", { r := 218, g := 112, b := 214 }⟩,
+  ⟨"Fuchsia", { r := 255, g := 0, b := 255 }⟩,
+  ⟨"Magenta", { r := 255, g := 0, b := 255 }⟩,
+  ⟨"MediumOrchid", { r := 186, g := 85, b := 211 }⟩,
+  ⟨"MediumPurple", { r := 147, g := 112, b := 219 }⟩,
+  ⟨"BlueViolet", { r := 138, g := 43, b := 226 }⟩,
+  ⟨"DarkViolet", { r := 148, g := 0, b := 211 }⟩,
+  ⟨"DarkOrchid", { r := 153, g := 50, b := 204 }⟩,
+  ⟨"DarkMagenta", { r := 139, g := 0, b := 139 }⟩,
+  ⟨"Purple", { r := 128, g := 0, b := 128 }⟩,
+  ⟨"RebeccaPurple", { r := 102, g := 51, b := 153 }⟩,
+  ⟨"MediumSlateBlue", { r := 123, g := 104, b := 238 }⟩,
+  ⟨"SlateBlue", { r := 106, g := 90, b := 205 }⟩,
+  ⟨"DarkSlateBlue", { r := 72, g := 61, b := 139 }⟩,
+  ⟨"Indigo", { r := 75, g := 0, b := 130 }⟩,
   -- Very dark purples (for colors like #30103E)
-  ⟨"DeepPurple", ⟨48, 16, 62⟩⟩,
-  ⟨"MidnightPurple", ⟨40, 20, 60⟩⟩,
-  ⟨"DarkIndigo", ⟨50, 0, 80⟩⟩,
-  ⟨"BlackPurple", ⟨30, 10, 40⟩⟩,
-  ⟨"DarkPlum", ⟨60, 20, 60⟩⟩,
+  ⟨"DeepPurple", { r := 48, g := 16, b := 62 }⟩,
+  ⟨"MidnightPurple", { r := 40, g := 20, b := 60 }⟩,
+  ⟨"DarkIndigo", { r := 50, g := 0, b := 80 }⟩,
+  ⟨"BlackPurple", { r := 30, g := 10, b := 40 }⟩,
+  ⟨"DarkPlum", { r := 60, g := 20, b := 60 }⟩,
 
   -- Pinks
-  ⟨"LavenderBlush", ⟨255, 240, 245⟩⟩,
-  ⟨"MistyRose", ⟨255, 228, 225⟩⟩,
-  ⟨"Pink", ⟨255, 192, 203⟩⟩,
-  ⟨"LightPink", ⟨255, 182, 193⟩⟩,
-  ⟨"HotPink", ⟨255, 105, 180⟩⟩,
-  ⟨"DeepPink", ⟨255, 20, 147⟩⟩,
-  ⟨"PaleVioletRed", ⟨219, 112, 147⟩⟩,
-  ⟨"MediumVioletRed", ⟨199, 21, 133⟩⟩,
+  ⟨"LavenderBlush", { r := 255, g := 240, b := 245 }⟩,
+  ⟨"MistyRose", { r := 255, g := 228, b := 225 }⟩,
+  ⟨"Pink", { r := 255, g := 192, b := 203 }⟩,
+  ⟨"LightPink", { r := 255, g := 182, b := 193 }⟩,
+  ⟨"HotPink", { r := 255, g := 105, b := 180 }⟩,
+  ⟨"DeepPink", { r := 255, g := 20, b := 147 }⟩,
+  ⟨"PaleVioletRed", { r := 219, g := 112, b := 147 }⟩,
+  ⟨"MediumVioletRed", { r := 199, g := 21, b := 133 }⟩,
 
   -- Browns (light to dark)
-  ⟨"Cornsilk", ⟨255, 248, 220⟩⟩,
-  ⟨"BlanchedAlmond", ⟨255, 235, 205⟩⟩,
-  ⟨"Bisque", ⟨255, 228, 196⟩⟩,
-  ⟨"NavajoWhite", ⟨255, 222, 173⟩⟩,
-  ⟨"Wheat", ⟨245, 222, 179⟩⟩,
-  ⟨"BurlyWood", ⟨222, 184, 135⟩⟩,
-  ⟨"Tan", ⟨210, 180, 140⟩⟩,
-  ⟨"RosyBrown", ⟨188, 143, 143⟩⟩,
-  ⟨"SandyBrown", ⟨244, 164, 96⟩⟩,
-  ⟨"Peru", ⟨205, 133, 63⟩⟩,
-  ⟨"Chocolate", ⟨210, 105, 30⟩⟩,
-  ⟨"Sienna", ⟨160, 82, 45⟩⟩,
-  ⟨"Brown", ⟨165, 42, 42⟩⟩,
-  ⟨"SaddleBrown", ⟨139, 69, 19⟩⟩,
+  ⟨"Cornsilk", { r := 255, g := 248, b := 220 }⟩,
+  ⟨"BlanchedAlmond", { r := 255, g := 235, b := 205 }⟩,
+  ⟨"Bisque", { r := 255, g := 228, b := 196 }⟩,
+  ⟨"NavajoWhite", { r := 255, g := 222, b := 173 }⟩,
+  ⟨"Wheat", { r := 245, g := 222, b := 179 }⟩,
+  ⟨"BurlyWood", { r := 222, g := 184, b := 135 }⟩,
+  ⟨"Tan", { r := 210, g := 180, b := 140 }⟩,
+  ⟨"RosyBrown", { r := 188, g := 143, b := 143 }⟩,
+  ⟨"SandyBrown", { r := 244, g := 164, b := 96 }⟩,
+  ⟨"Peru", { r := 205, g := 133, b := 63 }⟩,
+  ⟨"Chocolate", { r := 210, g := 105, b := 30 }⟩,
+  ⟨"Sienna", { r := 160, g := 82, b := 45 }⟩,
+  ⟨"Brown", { r := 165, g := 42, b := 42 }⟩,
+  ⟨"SaddleBrown", { r := 139, g := 69, b := 19 }⟩,
   -- Very dark browns
-  ⟨"DarkBrown", ⟨92, 64, 51⟩⟩,
-  ⟨"Espresso", ⟨59, 36, 27⟩⟩,
-  ⟨"CoffeeBrown", ⟨75, 54, 33⟩⟩,
+  ⟨"DarkBrown", { r := 92, g := 64, b := 51 }⟩,
+  ⟨"Espresso", { r := 59, g := 36, b := 27 }⟩,
+  ⟨"CoffeeBrown", { r := 75, g := 54, b := 33 }⟩,
 
   -- Grays (white to black, fine gradation)
-  ⟨"White", ⟨255, 255, 255⟩⟩,
-  ⟨"Snow", ⟨255, 250, 250⟩⟩,
-  ⟨"Ivory", ⟨255, 255, 240⟩⟩,
-  ⟨"FloralWhite", ⟨255, 250, 240⟩⟩,
-  ⟨"GhostWhite", ⟨248, 248, 255⟩⟩,
-  ⟨"WhiteSmoke", ⟨245, 245, 245⟩⟩,
-  ⟨"Seashell", ⟨255, 245, 238⟩⟩,
-  ⟨"AntiqueWhite", ⟨250, 235, 215⟩⟩,
-  ⟨"Linen", ⟨250, 240, 230⟩⟩,
-  ⟨"OldLace", ⟨253, 245, 230⟩⟩,
-  ⟨"Beige", ⟨245, 245, 220⟩⟩,
-  ⟨"Gainsboro", ⟨220, 220, 220⟩⟩,
-  ⟨"LightGray", ⟨211, 211, 211⟩⟩,
-  ⟨"Silver", ⟨192, 192, 192⟩⟩,
-  ⟨"DarkGray", ⟨169, 169, 169⟩⟩,
-  ⟨"Gray", ⟨128, 128, 128⟩⟩,
-  ⟨"DimGray", ⟨105, 105, 105⟩⟩,
-  ⟨"LightSlateGray", ⟨119, 136, 153⟩⟩,
-  ⟨"SlateGray", ⟨112, 128, 144⟩⟩,
-  ⟨"DarkSlateGray", ⟨47, 79, 79⟩⟩,
+  ⟨"White", { r := 255, g := 255, b := 255 }⟩,
+  ⟨"Snow", { r := 255, g := 250, b := 250 }⟩,
+  ⟨"Ivory", { r := 255, g := 255, b := 240 }⟩,
+  ⟨"FloralWhite", { r := 255, g := 250, b := 240 }⟩,
+  ⟨"GhostWhite", { r := 248, g := 248, b := 255 }⟩,
+  ⟨"WhiteSmoke", { r := 245, g := 245, b := 245 }⟩,
+  ⟨"Seashell", { r := 255, g := 245, b := 238 }⟩,
+  ⟨"AntiqueWhite", { r := 250, g := 235, b := 215 }⟩,
+  ⟨"Linen", { r := 250, g := 240, b := 230 }⟩,
+  ⟨"OldLace", { r := 253, g := 245, b := 230 }⟩,
+  ⟨"Beige", { r := 245, g := 245, b := 220 }⟩,
+  ⟨"Gainsboro", { r := 220, g := 220, b := 220 }⟩,
+  ⟨"LightGray", { r := 211, g := 211, b := 211 }⟩,
+  ⟨"Silver", { r := 192, g := 192, b := 192 }⟩,
+  ⟨"DarkGray", { r := 169, g := 169, b := 169 }⟩,
+  ⟨"Gray", { r := 128, g := 128, b := 128 }⟩,
+  ⟨"DimGray", { r := 105, g := 105, b := 105 }⟩,
+  ⟨"LightSlateGray", { r := 119, g := 136, b := 153 }⟩,
+  ⟨"SlateGray", { r := 112, g := 128, b := 144 }⟩,
+  ⟨"DarkSlateGray", { r := 47, g := 79, b := 79 }⟩,
   -- Very dark grays
-  ⟨"Charcoal", ⟨54, 69, 79⟩⟩,
-  ⟨"Jet", ⟨52, 52, 52⟩⟩,
-  ⟨"Onyx", ⟨53, 56, 57⟩⟩,
-  ⟨"EerieBlack", ⟨27, 27, 27⟩⟩,
-  ⟨"Black", ⟨0, 0, 0⟩⟩,
+  ⟨"Charcoal", { r := 54, g := 69, b := 79 }⟩,
+  ⟨"Jet", { r := 52, g := 52, b := 52 }⟩,
+  ⟨"Onyx", { r := 53, g := 56, b := 57 }⟩,
+  ⟨"EerieBlack", { r := 27, g := 27, b := 27 }⟩,
+  ⟨"Black", { r := 0, g := 0, b := 0 }⟩,
 
   -- Additional special colors
-  ⟨"AliceBlue", ⟨240, 248, 255⟩⟩,
-  ⟨"Azure", ⟨240, 255, 255⟩⟩,
-  ⟨"Honeydew", ⟨240, 255, 240⟩⟩,
-  ⟨"MintCream", ⟨245, 255, 250⟩⟩,
+  ⟨"AliceBlue", { r := 240, g := 248, b := 255 }⟩,
+  ⟨"Azure", { r := 240, g := 255, b := 255 }⟩,
+  ⟨"Honeydew", { r := 240, g := 255, b := 240 }⟩,
+  ⟨"MintCream", { r := 245, g := 255, b := 250 }⟩,
 
   -- Metallic approximations
-  ⟨"Copper", ⟨184, 115, 51⟩⟩,
-  ⟨"Bronze", ⟨205, 127, 50⟩⟩,
-  ⟨"BrassYellow", ⟨181, 166, 66⟩⟩,
+  ⟨"Copper", { r := 184, g := 115, b := 51 }⟩,
+  ⟨"Bronze", { r := 205, g := 127, b := 50 }⟩,
+  ⟨"BrassYellow", { r := 181, g := 166, b := 66 }⟩,
 
   -- Neon/Electric colors
-  ⟨"ElectricBlue", ⟨125, 249, 255⟩⟩,
-  ⟨"ElectricPurple", ⟨191, 0, 255⟩⟩,
-  ⟨"NeonGreen", ⟨57, 255, 20⟩⟩,
-  ⟨"NeonPink", ⟨255, 16, 240⟩⟩,
+  ⟨"ElectricBlue", { r := 125, g := 249, b := 255 }⟩,
+  ⟨"ElectricPurple", { r := 191, g := 0, b := 255 }⟩,
+  ⟨"NeonGreen", { r := 57, g := 255, b := 20 }⟩,
+  ⟨"NeonPink", { r := 255, g := 16, b := 240 }⟩,
 
   -- Nature-inspired
-  ⟨"ForestMoss", ⟨56, 93, 56⟩⟩,
-  ⟨"Sage", ⟨176, 208, 176⟩⟩,
-  ⟨"Seafoam", ⟨159, 226, 191⟩⟩,
-  ⟨"Ocean", ⟨0, 105, 148⟩⟩,
-  ⟨"DeepOcean", ⟨0, 51, 102⟩⟩,
-  ⟨"Sunset", ⟨250, 214, 165⟩⟩,
-  ⟨"Dusk", ⟨78, 81, 128⟩⟩,
-  ⟨"Wine", ⟨114, 47, 55⟩⟩,
-  ⟨"Burgundy", ⟨128, 0, 32⟩⟩,
-  ⟨"Mauve", ⟨224, 176, 255⟩⟩,
-  ⟨"Lilac", ⟨200, 162, 200⟩⟩,
-  ⟨"Periwinkle", ⟨204, 204, 255⟩⟩,
-  ⟨"Wisteria", ⟨201, 160, 220⟩⟩
+  ⟨"ForestMoss", { r := 56, g := 93, b := 56 }⟩,
+  ⟨"Sage", { r := 176, g := 208, b := 176 }⟩,
+  ⟨"Seafoam", { r := 159, g := 226, b := 191 }⟩,
+  ⟨"Ocean", { r := 0, g := 105, b := 148 }⟩,
+  ⟨"DeepOcean", { r := 0, g := 51, b := 102 }⟩,
+  ⟨"Sunset", { r := 250, g := 214, b := 165 }⟩,
+  ⟨"Dusk", { r := 78, g := 81, b := 128 }⟩,
+  ⟨"Wine", { r := 114, g := 47, b := 55 }⟩,
+  ⟨"Burgundy", { r := 128, g := 0, b := 32 }⟩,
+  ⟨"Mauve", { r := 224, g := 176, b := 255 }⟩,
+  ⟨"Lilac", { r := 200, g := 162, b := 200 }⟩,
+  ⟨"Periwinkle", { r := 204, g := 204, b := 255 }⟩,
+  ⟨"Wisteria", { r := 201, g := 160, b := 220 }⟩
 ]
 
 /-- Squared Euclidean distance between two colors in RGB space -/

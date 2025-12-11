@@ -11,10 +11,10 @@
 -/
 import HexLuthor.Widget
 import ProofWidgets.Component.Panel.SelectionPanel
-set_option doc.verso true
+-- set_option doc.verso true
 open HexLuthor
 
--- Hex color syntax: #xRRGGBB
+-- Hex color syntax: #xRRGGBB or #xRRGGBBAA (with alpha)
 #check #x7E2121  -- Wine
 #check #x00FF00  -- Green
 #check #x0000FF  -- Blue
@@ -24,6 +24,11 @@ open HexLuthor
 #check #x30103E  -- Deep Purple
 #check #x00CED1  -- Dark Turquoise
 #check #x4169E1  -- Royal Blue
+
+-- With alpha channel (8-digit hex)
+#check #xFF0000FF  -- Red, fully opaque (alpha = FF = 255)
+#check #xFF000080  -- Red, 50% transparent (alpha = 80 = 128)
+#check #xFF000000  -- Red, fully transparent (alpha = 00 = 0)
 
 -- Use in definitions
 def myFavoriteColor : Hex := #x4169E1  -- Royal Blue
@@ -38,8 +43,13 @@ def testColors2 : Hex × Hex := (testColor, ocean)
 #eval testColors2
 
 -- Mix with the Hex API
-#eval Hex.toHexString #x801CAB  -- "#736118"
+#eval Hex.toHexString #x801CAB  -- "#801CAB"
 #eval Hex.toHexString myFavoriteColor  -- "#4169E1"
+
+-- Alpha channel examples
+#eval (#xFF000080).a  -- 128 (50% transparent)
+#eval Hex.toHexString #xFF000080  -- "#FF000080" (includes alpha since != 255)
+#eval Hex.rgba 255 0 0 128  -- Create with explicit alpha
 
 -- Example showing colors in proof goals (click on the goal to see colors)
 example : myFavoriteColor = #x4169E1 := by

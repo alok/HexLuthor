@@ -41,11 +41,12 @@ def hexColorHtml (cssColor : String) (name : String) : ProofWidgets.Html :=
 def elabHexColorCore (hexVal : String) (stx : Syntax) (expectedType? : Option Expr) : TermElabM Expr := do
   match Hex.fromHexString? hexVal with
   | some color =>
-    -- Create the Hex value
+    -- Create the Hex value with all 4 components (including alpha)
     let r := Syntax.mkNumLit (toString color.r.toNat)
     let g := Syntax.mkNumLit (toString color.g.toNat)
     let b := Syntax.mkNumLit (toString color.b.toNat)
-    let hexExpr ← elabTerm (← `(Hex.mk $r $g $b)) expectedType?
+    let a := Syntax.mkNumLit (toString color.a.toNat)
+    let hexExpr ← elabTerm (← `(Hex.mk $r $g $b $a)) expectedType?
 
     let cssColor := color.toHexString
     let name := colorName color
@@ -59,7 +60,7 @@ def elabHexColorCore (hexVal : String) (stx : Syntax) (expectedType? : Option Ex
 
     return hexExpr
   | none =>
-    throwError "Invalid hex color: \"{hexVal}\". Expected 6 hex digits (RRGGBB)"
+    throwError "Invalid hex color: \"{hexVal}\". Expected 6 or 8 hex digits (RRGGBB or RRGGBBAA)"
 
 /-- Elaborator for #xRRGGBB syntax -/
 @[term_elab hexColorLit]
