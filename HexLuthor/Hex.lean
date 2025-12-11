@@ -38,7 +38,7 @@ def red : Hex := rgb 255 0 0
 def green : Hex := rgb 0 255 0
 def blue : Hex := rgb 0 0 255
 
-/-- Convert a hex color to CSS hex string like "#RRGGBB" -/
+/-- Convert a hex color to CSS hex string like "#RRGGBB" or "#RRGGBBAA" (if alpha ≠ 255) -/
 def toHexString (c : Hex) : String :=
   let hexChars : Vector Char 16 := #v[
     '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F']
@@ -48,7 +48,10 @@ def toHexString (c : Hex) : String :=
     let hiChar := hexChars[hi]
     let loChar := hexChars[lo]
     s!"{hiChar}{loChar}"
-  s!"#{toHex2 c.r}{toHex2 c.g}{toHex2 c.b}"
+  if c.a == 255 then
+    s!"#{toHex2 c.r}{toHex2 c.g}{toHex2 c.b}"
+  else
+    s!"#{toHex2 c.r}{toHex2 c.g}{toHex2 c.b}{toHex2 c.a}"
 
 /-! ### Parsec-based hex parsing -/
 

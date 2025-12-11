@@ -1,7 +1,8 @@
 import * as vscode from 'vscode';
 
 // Regex to find CANDIDATE positions - we validate them via LSP
-const HEX_COLOR_REGEX = /#x([0-9A-Fa-f]{6})\b/g;
+// Matches both #xRRGGBB (6 digits) and #xRRGGBBAA (8 digits with alpha)
+const HEX_COLOR_REGEX = /#x([0-9A-Fa-f]{6}(?:[0-9A-Fa-f]{2})?)\b/g;
 
 // Cache decoration types by color
 const decorationCache = new Map<string, vscode.TextEditorDecorationType>();
@@ -10,8 +11,20 @@ function getDecorationForColor(hexColor: string): vscode.TextEditorDecorationTyp
   const cached = decorationCache.get(hexColor);
   if (cached) return cached;
 
+  // For 8-digit hex, use CSS rgba() since #RRGGBBAA support varies
+  let cssColor: string;
+  if (hexColor.length === 8) {
+    const r = parseInt(hexColor.substring(0, 2), 16);
+    const g = parseInt(hexColor.substring(2, 4), 16);
+    const b = parseInt(hexColor.substring(4, 6), 16);
+    const a = parseInt(hexColor.substring(6, 8), 16) / 255;
+    cssColor = `rgba(${r}, ${g}, ${b}, ${a.toFixed(3)})`;
+  } else {
+    cssColor = `#${hexColor}`;
+  }
+
   const decoration = vscode.window.createTextEditorDecorationType({
-    color: `#${hexColor}`,
+    color: cssColor,
     fontWeight: 'bold',
   });
 
@@ -141,8 +154,12 @@ class HexLuthorColorProvider implements vscode.DocumentColorProvider {
       const r = parseInt(hexValue.substring(0, 2), 16) / 255;
       const g = parseInt(hexValue.substring(2, 4), 16) / 255;
       const b = parseInt(hexValue.substring(4, 6), 16) / 255;
+      // Parse alpha from 8-digit hex, default to 1 (opaque) for 6-digit
+      const a = hexValue.length === 8
+        ? parseInt(hexValue.substring(6, 8), 16) / 255
+        : 1;
 
-      colors.push(new vscode.ColorInformation(range, new vscode.Color(r, g, b, 1)));
+      colors.push(new vscode.ColorInformation(range, new vscode.Color(r, g, b, a)));
     }
 
     return colors;
@@ -156,10 +173,12 @@ class HexLuthorColorProvider implements vscode.DocumentColorProvider {
     const r = Math.round(color.red * 255);
     const g = Math.round(color.green * 255);
     const b = Math.round(color.blue * 255);
+    const a = Math.round(color.alpha * 255);
 
-    const hexString = [r, g, b]
-      .map(c => c.toString(16).padStart(2, '0').toUpperCase())
-      .join('');
+    // Only include alpha if not fully opaque
+    const hexString = a === 255
+      ? [r, g, b].map(c => c.toString(16).padStart(2, '0').toUpperCase()).join('')
+      : [r, g, b, a].map(c => c.toString(16).padStart(2, '0').toUpperCase()).join('');
 
     const presentation = new vscode.ColorPresentation(`#x${hexString}`);
     presentation.textEdit = new vscode.TextEdit(context.range, `#x${hexString}`);
