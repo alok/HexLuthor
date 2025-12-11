@@ -6,7 +6,7 @@ Lean 4 hex color syntax with inline VS Code/Cursor visualization.
 
 ## Features
 
-- **Custom `#xRRGGBB` syntax** - no quotes needed!
+- **Custom `#xRRGGBB` syntax**
 - **Semantic text coloring** - hex literals render in their actual color
 - **Interactive color picker** - click the color swatch to open a full palette, pick a new color, and it updates your code automatically (2-way sync!)
 - **Infoview widgets** - color preview with swatch and name in the Lean infoview panel

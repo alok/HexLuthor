@@ -10,7 +10,7 @@ open Lean Parser
 
 namespace HexLuthor
 
-/-- Term syntax for hex color literals: #xRRGGBB (no quotes needed!) -/
+/-- Term syntax for hex color literals: #xRRGGBB -/
 syntax:max (name := hexColorLit) "#x" noWs hexnum : term
 
 end HexLuthor
