@@ -17,6 +17,18 @@ open scoped ProofWidgets.Jsx
 
 namespace HexLuthor
 
+/-- Evaluate an expression to a Hex value using the Lean runtime.
+    Much lighter than `reduce` - compiles and runs instead of symbolic unfolding.
+
+    **Risks**: Non-terminating expressions will hang. Malformed expressions could
+    crash the process. Callers should pre-filter by type and catch exceptions.
+    Pattern from ProofWidgets.Demos.RbTree.evalColour. -/
+unsafe def evalHexUnsafe (e : Expr) : MetaM Hex :=
+  Lean.Meta.evalExpr' Hex ``Hex e
+
+@[implemented_by evalHexUnsafe]
+opaque evalHex (e : Expr) : MetaM Hex
+
 /-- Create HTML for a hex color preview with name -/
 def hexColorHtml (cssColor : String) (name : String) : ProofWidgets.Html :=
   <span style={json% {display: "inline-flex", alignItems: "center", gap: "8px", padding: "4px"}}>
@@ -58,14 +70,14 @@ def elabHexColor : TermElab := fun stx expectedType? => do
     elabHexColorCore hexVal stx expectedType?
   | _ => throwUnsupportedSyntax
 
-/-- Try to extract Hex values from an expression -/
+/-- Try to extract Hex values from an expression.
+    Uses `evalHex` to evaluate at runtime - much lighter than symbolic `reduce`. -/
 def extractHexFromExpr? (e : Expr) : MetaM (Option Hex) := do
-  let e ← whnf e
-  let_expr Hex.mk r g b := e | return none
-  let some rVal ← evalNat r | return none
-  let some gVal ← evalNat g | return none
-  let some bVal ← evalNat b | return none
-  return some ⟨rVal.toUInt8, gVal.toUInt8, bVal.toUInt8⟩
+  try
+    let hex ← evalHex e
+    return some hex
+  catch _ =>
+    return none
 
 /-- Presenter for Hex expressions - shows color preview inline in infoview -/
 @[expr_presenter]

@@ -11,11 +11,11 @@
 -/
 import HexLuthor.Widget
 import ProofWidgets.Component.Panel.SelectionPanel
-
+set_option doc.verso true
 open HexLuthor
 
--- Hex color syntax: #xRRGGBB (no quotes needed!)
-#check #xFF0000  -- Red
+-- Hex color syntax: #xRRGGBB
+#check #x7E2121  -- Wine
 #check #x00FF00  -- Green
 #check #x0000FF  -- Blue
 #check #xFFFFFF  -- White
@@ -26,12 +26,19 @@ open HexLuthor
 #check #x4169E1  -- Royal Blue
 
 -- Use in definitions
-def myFavoriteColor : Hex := #x56585D  -- Royal Blue
+def myFavoriteColor : Hex := #x4169E1  -- Royal Blue
 def sunset : Hex := #xFF6347  -- Tomato
 def ocean : Hex := #x006994  -- Sea blue
 
+def testColor : Hex := #x801CAB
+def testColors : Hex × Hex := (#x006994, #xCEBAD7)
+def testColors2 : Hex × Hex := (testColor, ocean)
+#eval testColor
+#eval testColors
+#eval testColors2
+
 -- Mix with the Hex API
-#eval Hex.toHexString #x736118  -- "#736118"
+#eval Hex.toHexString #x801CAB  -- "#736118"
 #eval Hex.toHexString myFavoriteColor  -- "#4169E1"
 
 -- Example showing colors in proof goals (click on the goal to see colors)
